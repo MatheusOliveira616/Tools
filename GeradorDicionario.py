@@ -1,70 +1,99 @@
 from itertools import permutations
-import time
+from datetime import datetime
+from time import sleep
+import subprocess
+import platform
+import os
 
 
-def mensagem_sucesso(nome_wordlist):
-    print("[+]Codigo Finalizado com Sucesso!")
-    time.sleep(1)
-    print(f"[+]Wordlist {nome_wordlist} Gerada!")
-
-
-def main(nomes:list , datas:list,caracteres_especiais:list , nome_wordlist:str):
-    with open(nome_wordlist , "w") as f:
-        print("[+]Iniciando script!")
-        for n in nomes:
-            for d in datas:
-                for c in caracteres_especiais:
-                    possibilidades = (len(nomes)*len(datas)*len(caracteres_especiais)) * 18
-                    try:
-
-                        l = permutations([n,d,c])
-                        l1 = permutations([n,d[4:],c])
-                        l2 = permutations([n,d[:4],c])
-
-
-                        for a in list(l):
-                            f.write(f"{"".join(a[0:3])}\n")
-
-                        for b in list(l1):
-                            f.write(f"{"".join(b[0:3])}\n")
-
-                        for c in list(l2):
-                            f.write(f"{"".join(c[0:3])}\n")
-
-
-                    except KeyboardInterrupt:
-                        print("[+]Codigo encerrado!")
-                    except Exception as erro:
-                        print(f"[+]Algo deu errado ao rodar as permutacoes!\nErro:{erro}")
-
-
-    mensagem_sucesso(nome_wordlist)
-
-
-
-if __name__ == "__main__":
-    print(r"""
-____  __.                                  .__         
-|    |/ _|____ _______  _____   ____ _______|__| ____   
-|      < \__  \\_  __ \/     \_/ __ \\___   /  |/    \  
-|    |  \ / __ \|  | \/  Y Y  \  ___/ /    /|  |   |  \ 
-|____|__ (____  /__|  |__|_|  /\___  >_____ \__|___|  / 
-        \/    \/            \/     \/      \/       \/  
-""")
-    
-
-    nomes = input("Digite nomes separados:").split()
-    datas = input("Digite datas (01012001):").split()
-    caracteres_especiais = "! @ # $ % ^ & *".split()
+def receber_dados():
+    nomes = input("Digite nomes espacados com virgula (nome nome1):").split()
 
 
     while True:
-        try:
-            nome_wordlist = input("Digite o nome ou local onde a wordlist sera salva:")
-        except PermissionError:
-            print("[+]Voce nao tem permissao para criar a wordlist nesse local!")
+        datas = input("Digite datas (01012001):").split()
+        datas_validas = []
+        erro = False
+        for data in datas:
+            try:
+                d = datetime.strptime(data, "%d%m%Y")
+
+            except ValueError:
+                print(f"[-]Data:{data} removida da lista!")
+                opcao = input("Deseja reescrever a data?[y/n]:")
+                if opcao.lower() == "y" or opcao == '':
+                    erro = True
+                else:
+                    erro = False
+
+            else:
+                datas_validas.append(data)
+            
+        if erro:
+            continue
+        else:
+            break
+        
+
+
+    while True:
+        nome_wordlist = input("Digite o nome do local onde a wordlist ira ser salva (/home/user/wordlist):")
+        if os.access(nome_wordlist, os.W_OK) == False:
+            print("[-]Voce nao tem permissao para escrever nesse diretorio!")
         else:
             break
 
 
-    main(nomes , datas , caracteres_especiais , nome_wordlist)
+    return nomes, datas_validas, nome_wordlist
+
+
+def gerar_wordlist(*data):
+    with open(data[2] , "w") as dicionario:
+        CARACTERES_ESPECIAIS = "! @ # $ % ^ & *".split()
+        print("[+]Gerando wordlist!")
+        for n in data[0]:
+            for d in data[1]:
+                for c in CARACTERES_ESPECIAIS:
+
+                    permutacoes_padrao = permutations([n,d,c])
+        
+                    permutacoes_dia = permutations([n,d[:4],c])
+        
+                    permutacoes_ano = permutations([n,d[4:],c])
+        
+        
+                    for permutacao_padrao in permutacoes_padrao:
+                        dicionario.write(f'{"".join(permutacao_padrao)}\n')
+
+                    for permutacao_dia in permutacoes_dia:
+                        dicionario.write(f'{"".join(permutacao_dia)}\n')
+
+                    for permutacao_ano in permutacoes_ano:
+                        dicionario.write(f'{"".join(permutacao_ano)}\n')
+
+
+    print("[+]Wordlist gerada com sucesso!")
+
+
+def main():
+    sistema = platform.system()
+    if sistema == "Windows":
+        subprocess.run("cls", shell=True)
+    elif sistema == "Linux":
+        subprocess.run("clear")
+    
+    print(r"""
+    ____  __.                                  .__         
+    |    |/ _|____ _______  _____   ____ _______|__| ____   
+    |      < \__  \\_  __ \/     \_/ __ \\___   /  |/    \  
+    |    |  \ / __ \|  | \/  Y Y  \  ___/ /    /|  |   |  \ 
+    |____|__ (____  /__|  |__|_|  /\___  >_____ \__|___|  / 
+            \/    \/            \/     \/      \/       \/  
+    """)
+
+
+    gerar_wordlist(*receber_dados())
+
+
+if __name__ == "__main__":
+    main()
